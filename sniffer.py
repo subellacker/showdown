@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import Select
 class ShowdownDriver:
 
@@ -12,9 +13,9 @@ class ShowdownDriver:
         profile = webdriver.FirefoxProfile()
         profile.set_preference('browser.download.folderList', 2) # custom location
         profile.set_preference('browser.download.manager.showWhenStarting', False)
-        profile.set_preference('browser.download.dir', '/tmp')
-        profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'text/csv')
-        self.driver = webdriver.Firefox()
+        profile.set_preference('browser.download.dir', '/home/subella/src/showdown/logs')
+        profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'text/html,text/plain')        
+        self.driver = webdriver.Firefox(profile)
         self.driver.get(url)
 
     def check_if_exists_by_name(self, name):
@@ -23,30 +24,25 @@ class ShowdownDriver:
         except:
             return False
         return True
-    
-    def check_if_exists_by_css_selector(self, selector):
-        try:
-            self.driver.find_element_by_css_selector(selector)
-        except:
-            return False
-        return True
-
-
-    def check_if_exists_by_link_text(self, link):
-        try:
-            self.driver.find_element_by_link_text(link)
-        except:
-            return False
-        return True
-
-
     def check_if_exists_by_xpath(self, xpath):
         try:
             self.driver.find_element_by_xpath(xpath)
         except:
             return False
         return True
-
+    def check_if_exists_by_css_selector(self, selector):
+        try:
+            self.driver.find_element_by_css_selector(selector)
+        except:
+            return False
+        return True
+    def check_if_exists_by_link_text(self, link):
+        try:
+            self.driver.find_element_by_link_text(link)
+        except:
+            return False
+        return True
+    
     def click_if_exists_by_name(self, name):
         if self.check_if_exists_by_name(name):
             try:
@@ -65,7 +61,14 @@ class ShowdownDriver:
                 self.driver.find_element_by_css_selector(selector).click()
             except:
                 print("Failed to click")
+    def click_if_exists_by_link_text(self, link):
+        if self.check_if_exists_by_link_text(link):
+            try:
+                self.driver.find_element_by_link_text(link).click()
+            except:
+                print("Failed to click")
    
+
     
     def click_when_exists_by_name(self, name):
         try:
@@ -74,7 +77,6 @@ class ShowdownDriver:
                     )
         finally:
             self.driver.find_element_by_name(name).click()
-
     def click_when_exists_by_xpath(self, xpath):
         try:
             element = WebDriverWait(self.driver, 1000).until(
@@ -84,8 +86,8 @@ class ShowdownDriver:
             self.driver.find_element_by_xpath(xpath).click()
 
     def tearDown(self):
-        pass
-        #self.driver.close()
+        
+        self.driver.close()
 
 
 class Sniffer(ShowdownDriver):
@@ -135,6 +137,8 @@ class Sniffer(ShowdownDriver):
             self.click_if_exists_by_name("goToEnd")
             
             if self.check_if_exists_by_name("saveReplay"):
+                self.click_if_exists_by_link_text("Download replay")
+
                 self.battle_array.remove(i)
                 close_button_str = ".closebutton[value='{}']".format(i[1:])
                 self.click_if_exists_by_css_selector(close_button_str)
