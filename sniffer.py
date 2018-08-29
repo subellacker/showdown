@@ -23,6 +23,22 @@ class ShowdownDriver:
         except:
             return False
         return True
+    
+    def check_if_exists_by_css_selector(self, selector):
+        try:
+            self.driver.find_element_by_css_selector(selector)
+        except:
+            return False
+        return True
+
+
+    def check_if_exists_by_link_text(self, link):
+        try:
+            self.driver.find_element_by_link_text(link)
+        except:
+            return False
+        return True
+
 
     def check_if_exists_by_xpath(self, xpath):
         try:
@@ -33,10 +49,24 @@ class ShowdownDriver:
 
     def click_if_exists_by_name(self, name):
         if self.check_if_exists_by_name(name):
-            self.driver.find_element_by_name(name).click()
+            try:
+                self.driver.find_element_by_name(name).click()
+            except:
+                print("Failed to click")
     def click_if_exists_by_xpath(self, xpath):
         if self.check_if_exists_by_xpath(xpath):
-            self.driver.find_element_by_xpath(xpath).click()
+            try:
+                self.driver.find_element_by_xpath(xpath).click()
+            except:
+                print("Failed to click")
+    def click_if_exists_by_css_selector(self, selector):
+        if self.check_if_exists_by_css_selector(selector):
+            try:
+                self.driver.find_element_by_css_selector(selector).click()
+            except:
+                print("Failed to click")
+   
+    
     def click_when_exists_by_name(self, name):
         try:
             element = WebDriverWait(self.driver, 1000).until(
@@ -66,66 +96,51 @@ class Sniffer(ShowdownDriver):
         self.click_when_exists_by_xpath("""(.//*[normalize-space(text()) and normalize-space(.)='Ladder'])[1]/following::button[1]""")
         self.click_when_exists_by_name( "selectFormat")
         self.click_when_exists_by_xpath( """(.//*[normalize-space(text()) and normalize-space(.)='Balanced Hackmons'])[1]/following::button[1]""")
-    #    self.click_if_exists_by_xpath("(.//*[normalize-space(text()) and normalize-space(.)='Elo 1300+'])[1]/following::a[1]")
-        self.battles_remaining=True
         self.watcher_array = []
+        self.battle_array = []
         time.sleep(1)
 
     def update(self):
         driver = self.driver
         i = 1
-        #battles_remaining = True
-        battle_array = []
-        if(self.battles_remaining):
+        battles_remaining = True
+        while(battles_remaining):
             xpath_formatted =  "(.//*[normalize-space(text()) and normalize-space(.)='Elo 1300+'])[1]/following::a[{}]".format(i)
             next_xpath_formatted =  "(.//*[normalize-space(text()) and normalize-space(.)='Elo 1300+'])[1]/following::a[{}]".format(i+1)
+            if self.check_if_exists_by_xpath(xpath_formatted):
+                try:
+                    battle_url =  str(driver.find_element_by_xpath(xpath_formatted).get_attribute('href'))
+                except:
+                    print("Cant get href")
+            print(battle_url)
+            battle_formatted = battle_url[-25:] 
 
-            battle_url =  str(driver.find_element_by_xpath(xpath_formatted).get_attribute('href'))
-            if battle_url not in battle_array:
-                battle_array.append(battle_url)
-                self.watcher_array.append(BattleWatcher(battle_url))
+            
+            if battle_formatted not in self.battle_array and "battle" in battle_formatted and len(self.battle_array)<9:
+                self.battle_array.append(battle_formatted)
+            xpath_url =str("//a[@href='{}']").format(battle_formatted)
+            print(xpath_url)
+            #driver.find_element_by_xpath(xpath_url).click()
+            #self.watcher_array.append(BattleWatcher(battle_url))
             #print(driver.find_element_by_xpath(xpath_formatted).get_attribute('href'))
-            #battles_remaining = self.check_if_exists_by_xpath(next_xpath_formatted)
-            self.battles_remaining = False
+            battles_remaining = self.check_if_exists_by_xpath(next_xpath_formatted)
+            #self.battles_remaining = False
             i+=1
-        #print(battle_array)
-        for i in self.watcher_array:
-            i.update()
+        print(self.battle_array)
+        
 
-
-
-
-       # i = 1
-       # battles_remaining = True
-       # while (battles_remaining):
-       #     xpath_formatted =  "(.//*[normalize-space(text()) and normalize-space(.)='Elo 1300+'])[1]/following::a[{}]".format(i)
-       #     next_xpath_formatted =  "(.//*[normalize-space(text()) and normalize-space(.)='Elo 1300+'])[1]/following::a[{}]".format(i+1)
-       #     if xpath_formatted[-9:] not in battle_array:
-       #         self.click_if_exists_by_xpath(xpath_formatted)
-       #         i = 1
-       #     #if not self.check_if_exists_by_xpath(xpath_formatted):
-
-       #     time.sleep(1)
-       #     self.click_if_exists_by_xpath("(.//*[normalize-space(text()) and normalize-space(.)='Battles'])[1]/preceding::span[1]")
-
-       #     time.sleep(1)
-       #     battles_remaining = self.check_if_exists_by_xpath(next_xpath_formatted)
-       #     i+=1
-       # print(battle_array)
-
-class BattleWatcher(ShowdownDriver):
-    def __init__(self, url):
-        ShowdownDriver.__init__(self, url)
-
-    def update(self):
-        if self.check_if_exists_by_name("saveReplay"):
-            self.driver.find_element_by_link_text("Download replay").click()
-
-        pass
-
-
-
-
+        for i in self.battle_array[:]:
+            xpath_url =str("//a[@href='{}']").format(i)
+            self.click_if_exists_by_xpath(xpath_url)
+            self.click_if_exists_by_name("goToEnd")
+            
+            if self.check_if_exists_by_name("saveReplay"):
+                self.battle_array.remove(i)
+                close_button_str = ".closebutton[value='{}']".format(i[1:])
+                self.click_if_exists_by_css_selector(close_button_str)
+#                driver.find_element_by_css_selector(close_button_str).click()
+        self.click_when_exists_by_name("refresh")    
+        
 
 
 sniffer = Sniffer("https://play.pokemonshowdown.com/")
